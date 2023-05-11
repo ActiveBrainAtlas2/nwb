@@ -1,5 +1,5 @@
 # CREATED: 4-MAY-2024
-# LAST EDIT: 8-MAY-2023
+# LAST EDIT: 11-MAY-2023
 # AUTHOR: DUANE RINEHART, MBA (drinehart@ucsd.edu)
 
 '''METHODS/FUNCTIONS FOR PROCESSING BEHAVIOR EXPERIMENTAL MODALITY'''
@@ -89,14 +89,19 @@ def add_timeseries_data(file, video_sampling_rate_Hz, name, description):
     unit = 'NA'
 
     if file_extension == '.xlsx':
-        nd_array_timeseries_data = pd.read_excel(file).to_numpy()
+        if name == 'raw_sensor_data':
+            nd_array_timeseries_data = pd.read_excel(file, header=None).to_numpy()
+        else:
+            nd_array_timeseries_data = pd.read_excel(file).to_numpy()
     else:
+
         nd_array_timeseries_data = loadmat(file)['data']  # get just the ndarray part
 
         if nd_array_timeseries_data.shape[0] == 1:
             nd_array_timeseries_data = nd_array_timeseries_data.T
 
         if name == 'raw_labchart_data':
+            unit = ''
             for datastart, dataend in zip(loadmat(file)['datastart'], loadmat(file)['dataend']):
                 unit += "({},{}) ".format(str(int(datastart)), str(int(dataend)))
 
