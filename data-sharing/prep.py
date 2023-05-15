@@ -1,10 +1,10 @@
 # CREATED: 11-APR-2023
-# LAST EDIT: 9-MAY-2023
+# LAST EDIT: 12-MAY-2023
 # AUTHOR: DUANE RINEHART, MBA (drinehart@ucsd.edu)
 
 '''TERMINAL CONVERSION SCRIPT FOR MULTIPLE EXPERIMENTAL MODALITIES'''
 
-import os, sys, pynwb, re, glob
+import os, sys, pynwb, re, glob, math
 from pathlib import Path, PurePath
 import argparse
 import pandas as pd
@@ -212,14 +212,19 @@ def load_data(input_file, experiment_modality):
 
 def get_subject(age, subject_description, genotype, sex, species, subject_id, subject_weight, date_of_birth, subject_strain):
     '''Used for meta-data '''
-    if re.search("^P*D$", age):  # STARTS WITH 'P' AND ENDS WITH 'D' (CORRECT FORMATTING)
-        subject_age = age
-    else:
-        if isinstance(age, str) != True: #POSSIBLE int, FORMAT FOR ISO 8601
-            subject_age = "P" + str(int(age)) + "D"  # ISO 8601 Duration format - assumes 'days'
+    try:
+        if math.isnan(age):
+            #subject_age = ''
+            subject_age = "P0D/"  # generic default
+    except:
+        if re.search("^P.*D$", age):  # STARTS WITH 'P' AND ENDS WITH 'D' (CORRECT FORMATTING)
+            subject_age = age
         else:
-            subject_age = "P0D"  # generic default
-            
+            if isinstance(age, str) != True:  # POSSIBLE int, FORMAT FOR ISO 8601
+                subject_age = "P" + str(int(age)) + "D"  # ISO 8601 Duration format - assumes 'days'
+            else:
+                subject_age = "P0D"  # generic default
+
     dob = date_of_birth.to_pydatetime() #convert pandas timestamp to python datetime format
     if isinstance(dob.year, int) and isinstance(dob.month, int) and isinstance(dob.day, int) == True:
         date_of_birth = datetime(dob.year, dob.month, dob.day, tzinfo=tzlocal())
@@ -446,18 +451,27 @@ def main():
                 video_file_path = '' #.avi
                 for video_file_path in glob.glob(base_path_with_pattern, recursive=False):
                     print(f'\tINCLUDING/REFERENCING VIDEO FILE: {video_file_path}')
-                relative_path_video_file = behavior.get_video_reference_data(video_file_path, dest_path)
+                absolute_path_video_file = video_file_path
 
                 video_location_file_path = '' #.csv
                 glob_pattern = session_id + '_*_*_torso.csv'
                 base_path_with_pattern = str(Path(*path_stub, glob_pattern))
                 for video_location_file_path in glob.glob(base_path_with_pattern, recursive=False):
                     print(f'\tINCLUDING/REFERENCING VIDEO LOCATION FILE: {video_location_file_path}')
-                if video_location_file_path == '':
+                if video_location_file_path != '':
                     relative_path_video_location_file = video_location_file_path
-                else:
-                    relative_path_video_location_file = behavior.get_video_reference_data(video_location_file_path, dest_path)
+                    time_series_name = 'torso_dlc'
+                    description = 'torso_tracking'
+                    video_sampling_rate_Hz = 20.0
+                    behavioral_time_series = behavior.add_timeseries_data(relative_path_video_location_file, video_sampling_rate_Hz, time_series_name, description)
 
+                    behavior_module = nwbfile.create_processing_module(
+                        name=time_series_name, description=description
+                    )
+                    behavior_module.add(behavioral_time_series)
+
+
+                comments_file_path = ''
                 glob_pattern = session_id + '_*_ellipse_*.mat'
                 base_path_with_pattern = str(Path(*path_stub, glob_pattern))
                 for comments_file_path in glob.glob(base_path_with_pattern, recursive=False):
@@ -475,7 +489,7 @@ def main():
                 # Note: This approach references the video files and does not include them in nwb file
                 behavior_external_file = ImageSeries(
                     name="ImageSeries",
-                    external_file=[relative_path_video_file, relative_path_video_location_file],
+                    external_file=[absolute_path_video_file],
                     description=session_description,
                     format="external",
                     rate=float(video_sampling_rate),

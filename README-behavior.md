@@ -17,7 +17,7 @@
       * optional argument: institution (-institution) - string in quotes
       
       example terminal command: 
-      python data-sharing/prep.py -i /net/birdstore/Songmao/CURBIO_SL_DK/input_behavior_linux2_full.xlsx -o /net/birdstore/Songmao/output -exp 4
+      python data-sharing/prep.py -i /net/birdstore/Songmao/CURBIO_SL_DK/input_behavior.xlsx -o /net/birdstore/Songmao/output -exp 4
 
       Excel file has experimenters, institution headers however command line arguments will take priority
       If output folder is not defined, script will create folder in current working directory
@@ -26,6 +26,9 @@
 
     1. Use [nwb_utils.ipynb](nwb_utils.ipynb) (Jupyter Notebook) to validate NWB files
         after processing.  See 'MANUAL EXAMINE CONTENTS OF NWB FILE' in header block
+
+      When uploading to dandiarchive.org "organize" function should be:
+      organize -f "copy" --update-external-file-paths --media-files-mode "symlink" "../output/"
 
 ## Files
 
@@ -41,7 +44,7 @@
 
 - Current template file for behavior (as of 8-MAY-2023) used for processing the following types of files:  
 .avi (external)  
-.csv (external)(timeseries - location "torso")  
+.csv (timeseries - location "torso")  
 .mat (geometry [ellipse] - comment to image series)  
 .xlsx(timeseries - sensor data: ndarray)  
 .mat (timeseries - data [36data]: ndarray)  
